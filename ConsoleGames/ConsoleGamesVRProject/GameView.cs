@@ -21,12 +21,30 @@ namespace Games
         public override void Play()
         {
 
-            //bj.Play();
-            //race.Play();
             Setup();
-            CnC.Play();
+            Clear();
+            TellUser(" 1.Black Jack\n 2.Race \n 3.ChessNCheckers \n 4.Exit\nPick a Game ? (1-3) ");
+            string answer = "";
+            answer = AskUser();
+            switch (answer)
+            {
+                case "1":
+                    bj.Play();
+                    break;
+                case "2":
+                    race.Play();
+                    break;
+                case "3":
+                    CnC.Play();
+                    break;
+                case "4":
+                default:
+                    TellUser("Thanks !!!");
+                    break;
+            }
         }
 
+        // setup and index all games
         protected override void Setup()
         {
             bj = new Blackjack(1);
@@ -36,20 +54,22 @@ namespace Games
             CnC.OnCnCComplete += GameOver_OnCnCComplete;
         }
 
+        //called when Race ends
         private void GameOver_OnRaceComplete(int obj)
         {
             if (AskToPlay())
                 race.Play();
             else
-                TellUser("Thanks !!!");
+                Play();
         }
 
+        //called when Chess/Checkers ends
         private void GameOver_OnCnCComplete(int obj)
         {
             if (AskToPlay())
                 CnC.Play();
             else
-                TellUser("Thanks !!!");
+                Play();
         }
 
         private bool AskToPlay()
