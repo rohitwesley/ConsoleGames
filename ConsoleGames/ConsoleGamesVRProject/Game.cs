@@ -22,6 +22,8 @@ namespace Games
         // Current HighScore 
         public float HighScore { get; private set; }
 
+        static protected Random rnd = new Random();
+
         // Do make use of readonly for fields that are not modified after construction.
         public readonly int GameID;
 
@@ -61,6 +63,17 @@ namespace Games
             Console.Clear();
         }
 
-    }
+
+
+        // Abstract Random Generator for Coin Toss
+        public bool RollCoin()
+        {
+            if (rnd.Next() % 2 == 0)
+                return true;
+            else
+                return false;
+        }
+
+}
 
 }

@@ -8,6 +8,8 @@ namespace Games
 {
     class GameView : Game
     {
+
+
         Blackjack bj;
         Race race;
         ChessNCheckers CnC;

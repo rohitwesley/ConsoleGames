@@ -13,6 +13,7 @@ namespace Games
         private Tile[,] boardTile;
 
         bool isChess;
+        bool isP1Turn;
 
         // Initialise Game Type ID
         public ChessNCheckers(int gameId) : base(gameId)
@@ -23,6 +24,7 @@ namespace Games
         public override void Play()
         {
             Setup();
+            PlayerTurnLoop();
             OnCnCComplete(0);
         }
 
@@ -30,7 +32,6 @@ namespace Games
         {
             isChess = AskToPlay();
             ResetBoardPieces();
-            DrawBoard();
         }
 
         private void ResetBoardPieces()
@@ -94,7 +95,7 @@ namespace Games
             else
             {
 
-                // Setup X pieces for checkers
+                // Setup X Pieces for checkers
                 bool isOdd = true;
                 //columns
                 for (int i = 0; i < 3; i++)
@@ -115,7 +116,7 @@ namespace Games
                     }
                 }
 
-                // Setup O pieces for checkers
+                // Setup O Pieces for checkers
                 isOdd = false;
                 //columns
                 for (int i = 5; i < 8; i++)
@@ -126,12 +127,12 @@ namespace Games
                     {
                         if (isOdd && j % 2 != 0)
                         {
-                            boardTile[i, j].value = "O";
+                            boardTile[i, j].value = "o";
 
                         }
                         else if (!isOdd && j % 2 == 0)
                         {
-                            boardTile[i, j].value = "O";
+                            boardTile[i, j].value = "o";
                         }
                     }
                 }
@@ -191,6 +192,378 @@ namespace Games
 
             return isAskUser;
 
+        }
+
+
+        private bool PlayerTurnLoop()
+        {
+            // 1 sec pause time
+            int pauseTime = 6000;
+            // Show user the board
+            Clear();
+            DrawBoard();
+            Pause(pauseTime/6);
+
+            // Show toss coin animation
+            int tossTime = rnd.Next(4,10);
+            for (int tossTick = 0; tossTick < tossTime; tossTick++)
+            {
+                Clear();
+                TellUser("Tossing Coin to see who starts.");
+                string progressBar = "";
+                for (int i = 0; i < tossTick; i++)
+                {
+                    progressBar += ".";
+                }
+                TellUser(progressBar); 
+                isP1Turn = RollCoin();
+                Pause(1000);
+                if (isP1Turn) TellUser("Is it Player 1 ?");
+                else TellUser("Is it Player 2 ?");
+                Pause(1000);
+            }
+
+            // ask user if he wants to play again
+            bool isEndofGame = false;
+            while (!isEndofGame)
+            {
+                Clear();
+                DrawBoard();
+                Pause(pauseTime/4);
+                if (isP1Turn) TellUser("Player 1's Turn :");
+                else TellUser("Player 2's Turn :");
+
+                TellUser("Please Choose a Pieces to move : (1-8,a-h)");
+                string answer = "";
+                answer = AskUser();
+                string[] position = answer.Split(",");
+
+                //clear the screen before next state
+                Clear();
+
+                if (position.Length != 2)
+                {
+                    TellUser("Please enter a valid input.");
+                }
+                else
+                {
+                    DrawBoard();
+                    int xPawn = Convert.ToInt32(position[0]) - 1;//Get int value and normalise to array index 0-7
+                    int yPawn = ((int)Convert.ToChar(position[1]) - 97);//Get ASCII value 97-104 (a-h)and normalise to arry index 0-7
+
+                    Clear();
+                    
+                    if (isValidPawn(xPawn, yPawn, isP1Turn))
+                    {
+                        DrawBoard();
+                        TellUser("The ASCII value of '" + position[1] + "' using (int)character: " + (int)Convert.ToChar(position[1]));
+                        TellUser("Please Choose a diagnol tile to move to: (1-8,a-h)");
+                        answer = AskUser();
+                        string[] movePawn = answer.Split(",");
+
+                        //clear the screen before next state
+                        Clear();
+
+                        if (movePawn.Length != 2)
+                        {
+                            TellUser("Please enter a valid input.");
+                        }
+                        else
+                        {
+                            DrawBoard();
+                            int xTile = Convert.ToInt32(movePawn[0]) - 1;//Get int value and normalise to array index 0-7
+                            int yTile = ((int)Convert.ToChar(movePawn[1]) - 97);//Get ASCII value 97-104 (a-h)and normalise to arry index 0-7
+
+                            //clear the screen before next state
+                            Clear();
+
+                            if(isValidMove(xPawn, yPawn, xTile, yTile, isP1Turn))
+                            {
+                                TellUser("Valid Move");
+                                // TODO place end of game state in the write place
+                                isEndofGame = playMove(xPawn, yPawn, xTile, yTile, isP1Turn);
+                                //next players turn
+                                isP1Turn = !isP1Turn;
+                            }
+                            else
+                            {
+                                TellUser("Please select a valid tile to move your Pieces on the board.");
+                            }
+
+                        }
+
+                        
+                    }
+                    else
+                    {
+                        TellUser("Please select one of your Pieces from the board.");
+                    }
+
+
+                }
+                // pause at the end of every turn.
+                Pause(pauseTime/2);
+            }
+
+            return isEndofGame;
+
+        }
+
+        private bool playMove(int xPawn, int yPawn, int xTile, int yTile, bool isP1Turn)
+        {
+            int xMove, yMove;
+            if (xTile > xPawn) xMove = 1;
+            else xMove = -1;
+            if (yTile > yPawn) yMove = 1;
+            else yMove = -1;
+
+            // check if is chess or checkers
+            if (isChess)
+            {
+                // TODO chess logic for valid pawn
+                return false;
+            }
+            else
+            {
+                // check if is a valid players Piece
+                if (isP1Turn)
+                {
+                    boardTile[xPawn, xPawn].value = " ";
+                    boardTile[xTile, yTile].value = "x";
+                    // valid if is oponent tile 
+                    while (boardTile[xTile, yTile].value == "o" && ((xTile < 8 || xTile >= 0) && (yTile < 8 || yTile >= 0)))
+                    {
+                        int xNewTile = xTile + xMove;
+                        int yNewTile = yTile + yMove;
+                        //update traversing move
+                        xPawn = xTile;
+                        yPawn = yTile;
+                        xTile = xNewTile;
+                        yTile = yNewTile;
+                        boardTile[xPawn, xPawn].value = " ";
+                        boardTile[xTile, yTile].value = "x";
+
+                    }
+                    return isWinGame();
+                }
+                else
+                {
+                    boardTile[xPawn, xPawn].value = " ";
+                    boardTile[xTile, yTile].value = "o";
+                    // valid if is oponent tile 
+                    while (boardTile[xTile, yTile].value == "x" && ((xTile < 8 || xTile >= 0) && (yTile < 8 || yTile >= 0)))
+                    {
+                        int xNewTile = xTile + xMove;
+                        int yNewTile = yTile + yMove;
+                        //update traversing move
+                        xPawn = xTile;
+                        yPawn = yTile;
+                        xTile = xNewTile;
+                        yTile = yNewTile;
+                        boardTile[xPawn, xPawn].value = " ";
+                        boardTile[xTile, yTile].value = "o";
+
+                    }
+                    return isWinGame();
+                }
+
+            }
+        }
+
+        private bool isWinGame()
+        {
+            return false;
+        }
+
+        private bool isValidMove(int xPawn, int yPawn, int xTile, int yTile, bool isP1Turn)
+        {
+            Clear();
+            Pause(1000);
+            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+            TellUser("Move : [" + xTile + "," + yTile + "]");
+            Pause(1000);
+            int xMove, yMove;
+            if (xTile > xPawn) xMove = 1;
+            else xMove = -1;
+            if (yTile > yPawn) yMove = 1;
+            else yMove = -1;
+
+            // check if is chess or checkers
+            if (isChess)
+            {
+                // TODO chess logic for valid pawn
+                return false;
+            }
+            else
+            {
+                // check if is a valid players Piece
+                if (isP1Turn)
+                {
+                    // check if is diagonal tile
+                    if ((xTile == xPawn + 1 || xTile == xPawn - 1) && (yTile == yPawn + 1 || yTile == yPawn - 1))
+                    {
+                        // valid if is oponent tile 
+                        while (boardTile[xTile, yTile].value == "o" && ((xTile < 8 || xTile >= 0) && (yTile < 8 || yTile >= 0)))
+                        {
+                            int xNewTile = xTile + xMove;
+                            int yNewTile = yTile + yMove;
+
+
+                            //update traversing move
+                            xPawn = xTile;
+                            yPawn = yTile;
+                            xTile = xNewTile;
+                            yTile = yNewTile;
+
+                            Clear();
+                            Pause(1000);
+                            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Move : [" + xTile + "," + yTile + "]");
+                            Pause(1000);
+
+                        }
+                        // valid if is empty tile 
+                        if (boardTile[xTile, yTile].value == " ")
+                        {
+                            Clear();
+                            Pause(1000);
+                            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Move : [" + xTile + "," + yTile + "]");
+                            Pause(1000);
+
+                            return true;
+                        }
+                        else
+                        {
+                            Clear();
+                            Pause(1000);
+                            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Move : [" + xTile + "," + yTile + "]");
+                            Pause(1000);
+
+                            return false;
+                        }
+                    }
+                    else
+                        return false;
+                }
+                else
+                {
+
+                    // check if is diagonal tile
+                    if ((xTile == xPawn + 1 || xTile == xPawn - 1) && (yTile == yPawn + 1 || yTile == yPawn - 1))
+                    {
+                        // valid if is oponent tile 
+                        while (boardTile[xTile, yTile].value == "x" && ((xTile < 8 || xTile >= 0) && (yTile < 8 || yTile >= 0)))
+                        {
+                            int xNewTile = xTile + xMove;
+                            int yNewTile = yTile + yMove;
+
+
+                            //update traversing move
+                            xPawn = xTile;
+                            yPawn = yTile;
+                            xTile = xNewTile;
+                            yTile = yNewTile;
+
+                            Clear();
+                            Pause(1000);
+                            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Move : [" + xTile + "," + yTile + "]");
+                            Pause(1000);
+
+                        }
+                        // valid if is empty tile 
+                        if (boardTile[xTile, yTile].value == " ")
+                        {
+                            Clear();
+                            Pause(1000);
+                            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Move : [" + xTile + "," + yTile + "]");
+                            Pause(1000);
+
+                            return true;
+                        }
+                        else
+                        {
+                            Clear();
+                            Pause(1000);
+                            TellUser("Piece : [" + xPawn + "," + yPawn + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn + 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn + 1) + "]");
+                            TellUser("Options : [" + (xPawn - 1) + "," + (yPawn - 1) + "]");
+                            TellUser("Move : [" + xTile + "," + yTile + "]");
+                            Pause(1000);
+
+                            return false;
+                        }
+                    }
+                    else
+                        return false;
+                }
+
+            }
+
+        }
+
+        private bool isValidPawn(int xPawn, int yPawn, bool isP1Turn)
+        {
+            // check if is a valid place on the board
+            if (xPawn >= 0 && xPawn <= 7 && yPawn >= 0 && yPawn <= 7)
+            {
+                // check if is chess or checkers
+                if(isChess)
+                {
+                    // TODO chess logic for valid pawn
+                    return false;
+                }
+                else
+                {
+                    // check if is a valid players Piece
+                    if (isP1Turn)
+                    {
+                        if (boardTile[xPawn, yPawn].value == "x")
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                    {
+
+                        if (boardTile[xPawn, yPawn].value == "o")
+                            return true;
+                        else
+                            return false;
+                    }
+
+                }
+            }
+            else return false;
         }
 
         class Tile
