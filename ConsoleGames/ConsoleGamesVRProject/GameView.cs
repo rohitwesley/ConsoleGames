@@ -8,7 +8,15 @@ namespace Games
 {
     class GameView : Game
     {
-
+        // ERIK: Below isn't super polymorphic. Let's assume GameView is intended to be something
+        // that is interoperable will all instances of Game...this should mean that it wouldn't actually need
+        // to know the specific concrete class type. I.e., the below would be valid:
+        // Game bj;
+        // Game race;
+        // Game CheckersNCheckers;
+        // If the above *couldn't* be done, then we would need a specific view class for each game.
+        // This isn't necessarily a bad thing.
+        // Wait holdup GameView and the games are child classes of Game :O
 
         Blackjack bj;
         Race race;
@@ -56,6 +64,7 @@ namespace Games
             CnC.OnCnCComplete += GameOver_OnCnCComplete;
         }
 
+        // ERIK: The below yearns to be DRY: https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
         //called when Race ends
         private void GameOver_OnRaceComplete(int obj)
         {
@@ -74,6 +83,7 @@ namespace Games
                 Play();
         }
 
+        // ERIK: This is very controller-y. What does a view care if someone wants to play or not?
         private bool AskToPlay()
         {
             //aske user if he want to play again

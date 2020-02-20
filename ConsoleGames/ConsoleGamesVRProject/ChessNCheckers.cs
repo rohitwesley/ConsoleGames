@@ -6,10 +6,19 @@ using System.Threading.Tasks;
 
 namespace Games
 {
+    // ERIK: It's certaintly possible to play both checkers and chess
+    // using the same class for the core logic...but typically, an indication
+    // that the design might not be working is if the class has "or"s in it.
+    // I can handle checkers OR chess, rather than: I handle board games
+    // that take place on tiled boards, where two players setup pieces in initial
+    // positions on the board. Pieces can move to specific tiles according to their own
+    // logic. Pieces can capture other pieces also according to their own logic.
+    // ^^The above doesn't handle either checkers or chess, it just handles games LIKE them.
     class ChessNCheckers : Game
     {
         public event Action<int> OnCnCComplete;
 
+        // ERIK: 2D arrays are sick.
         private Tile[,] boardTile;
 
         bool isChess;
@@ -164,6 +173,7 @@ namespace Games
 
         }
 
+        // ERIK: I think this is a repeated in Game.
         private bool AskToPlay()
         {
             Clear();
@@ -194,7 +204,10 @@ namespace Games
 
         }
 
-
+        // ERIK: A ton of this is fluff (sort of "nice to haves")—this isn't a bad thing, I love fluff.
+        // But it's good to try and keep the fluff away from the core stuff (where the fallout from failure
+        // is much higher). Let the core loop of the game be a small function that is well-coded, and the fluff
+        // exist on a higher level of abstraction where it doesn't really matter how extensible it is.
         private bool PlayerTurnLoop()
         {
             // 1 sec pause time
@@ -309,6 +322,8 @@ namespace Games
 
         }
 
+        // ERIK: Single responsibility: Should a function named playMove be returning
+        // whether the game is over?
         private bool playMove(int xPawn, int yPawn, int xTile, int yTile, bool isP1Turn)
         {
             int xMove, yMove;
@@ -392,6 +407,7 @@ namespace Games
             if (yTile > yPawn) yMove = 1;
             else yMove = -1;
 
+            // ERIK: Polymorphism.
             // check if is chess or checkers
             if (isChess)
             {
@@ -400,6 +416,9 @@ namespace Games
             }
             else
             {
+                // ERIK: Level of abstraction. This function doesn't need to care whose turn it is, or even if
+                // a valid piece is selected. Let someone else do that. Valid moves in checkers are pretty simple
+                // (is the space diagonal and not filled?), so the function can be too.
                 // check if is a valid players Piece
                 if (isP1Turn)
                 {

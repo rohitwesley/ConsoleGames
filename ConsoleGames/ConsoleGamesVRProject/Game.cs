@@ -1,4 +1,6 @@
-﻿// Comments have a space after the slashes, and end in a period.
+﻿// ERIK: Make sure to remove all the fluff from my style guide.
+
+// Comments have a space after the slashes, and end in a period.
 // Long comments should use multiple lines, either with a double
 // slash before each, or using /* */ comment blocks.
 
@@ -12,18 +14,26 @@ using System.Threading;
 namespace Games
 {
 
+    // ERIK: This class has some useful functionality in it that is general to 
+    // different console games (pausing, printing data, accepting user input),
+    // but it really doesn't have anything to do with the games themselves (chess
+    // doesn't care about pausing). This is more of a generalized game controller.
     /// <summary>
     /// The abstract class to use for all game logic code.
     /// </summary>
     // Shown here as the parent class of All Game Logic.
     public abstract class Game
     {
-
+        // ERIK: Hard to say if checkers has a high score (maybe?). If something
+        // doesn't truly accomodate a general use case, just leave it specific! Specific
+        // code that is contained doesn't hurt other classes, and is easy to move around.
         // Current HighScore 
         public float HighScore { get; private set; }
 
         static protected Random rnd = new Random();
 
+        // ERIK: Purge all unused fields and variables! They just make stuff harder
+        // to read and debug.
         // Do make use of readonly for fields that are not modified after construction.
         public readonly int GameID;
 

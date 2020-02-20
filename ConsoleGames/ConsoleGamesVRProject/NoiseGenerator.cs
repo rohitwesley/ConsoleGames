@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Games
 {
+    // ERIK: Stuff like this could be saved on branches.
     /// <summary>
     /// Noise Generator funtion
     /// </summary>

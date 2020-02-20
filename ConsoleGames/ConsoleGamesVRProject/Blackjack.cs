@@ -1,4 +1,7 @@
-﻿// Comments have a space after the slashes, and end in a period.
+﻿// ERIK: Could almost just move this stuff all to a branch until one game
+// is fully functional...maybe.
+
+// Comments have a space after the slashes, and end in a period.
 // Long comments should use multiple lines, either with a double
 // slash before each, or using /* */ comment blocks.
 
