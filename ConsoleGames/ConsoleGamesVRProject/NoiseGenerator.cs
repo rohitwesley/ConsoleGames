@@ -13,6 +13,8 @@ namespace Games
     class NoiseGenerator
     {
 
+        static protected Random rnd = new Random();
+
         void GenerateWhiteNoise(int imageWidth, int imageHeight)
         {
             //imageWidth = imageHeight = 512;
@@ -36,6 +38,14 @@ namespace Games
             //ofs.close();
         }
 
+        // Abstract Random Generator for Coin Toss
+        public static bool RollCoin()
+        {
+            if (rnd.Next() % 2 == 0)
+                return true;
+            else
+                return false;
+        }
 
     }
 }

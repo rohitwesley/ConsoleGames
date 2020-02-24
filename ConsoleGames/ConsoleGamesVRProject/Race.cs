@@ -11,7 +11,7 @@ namespace Games
     /// Race Game Logic
     /// Use play to start.
     /// </summary>
-    class Race : Game
+    class Race : GameLogic
     {
 
         public event Action<int> OnRaceComplete;

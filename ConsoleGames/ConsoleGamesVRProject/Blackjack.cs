@@ -19,7 +19,7 @@ namespace Games
     /// BlackJack Game Logic
     /// Use play to start.
     /// </summary>
-    public class Blackjack : Game
+    public class Blackjack : GameLogic
     {
 
         // the money you have with you through a game.
@@ -170,15 +170,15 @@ namespace Games
                 bool isBetting = true;
                 while (isBetting)
                 {
-                    TellUser("Welcome To Black Jack :");
-                    Pause(80);
-                    TellUser("Choose your base bet :");
-                    TellUser("1. Low");
-                    TellUser("2. Mid");
-                    TellUser("3. High");
-                    answer = AskUser();
+                    //TellUser("Welcome To Black Jack :");
+                    //Pause(80);
+                    //TellUser("Choose your base bet :");
+                    //TellUser("1. Low");
+                    //TellUser("2. Mid");
+                    //TellUser("3. High");
+                    //answer = AskUser();
                     int betChoice = Convert.ToInt32(answer);
-                    TellUser("betChoice: " + betChoice);
+                    //TellUser("betChoice: " + betChoice);
                     //if (betChoice > 0 && betChoice < 4)
                     //{
                     //    if (betChoice == 1)
@@ -336,7 +336,7 @@ namespace Games
                 isPassed = true;
             }
 
-            TellUser("Your got:" + Money);
+            //TellUser("Your got:" + Money);
 
         }
 
@@ -344,7 +344,7 @@ namespace Games
         {
             for (int i = 0; i < deck.Count; i++)
             {
-                TellUser("/" + deck[i].suit + deck[i].no + "/");
+                //TellUser("/" + deck[i].suit + deck[i].no + "/");
             }
         }
 

@@ -13,7 +13,7 @@ namespace Games
         public int duration;
     }
 
-    class Composer : Game
+    class Composer : GameLogic
     {
 
         public Composer(int gameId) : base(gameId)
