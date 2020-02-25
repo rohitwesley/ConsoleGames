@@ -14,14 +14,15 @@ namespace Games
         public event Action<Tile[,]> OnDrawBoard;
         public event Action<bool> OnSetStartPlayer;
         public event Action<Tile[,]> OnPlayerSelectPiece;
-        public event Action<Tile[,]> OnPlayerSelectTile;
+        public event Action<Tile[,]> OnPlayerMovePiece;
+        public event Action<Playertype> OnGameOver;
 
         private Tile[,] boardTile;
 
         // active move
-        public int xPawn,yPawn, xTile, yTile;
-
-        public bool isP1Turn;
+        public List<Index> currentPieceMovesIndex;
+        public Index currentPieceIndex;
+        public Playertype currentPlayer;
 
         // Initialise Game Type ID
         public Checkers(int gameId) : base(gameId)
@@ -52,7 +53,8 @@ namespace Games
                 for (int j = 0; j < 8; j++)
                 {
                     Tile tile = new Tile();
-                    tile.value = " ";
+                    tile.piece = new Piece();
+                    tile.Reset();
                     boardTile[i, j] = tile;
                 }
             }
@@ -68,12 +70,24 @@ namespace Games
                 {
                     if (isOdd && j % 2 != 0)
                     {
-                        boardTile[i, j].value = "x";
+                        Piece piece = new Piece
+                        {
+                            isActive = true,
+                            player = Playertype.X,
+                            pieceType = PieceType.Pawn
+                        };
+                        boardTile[i, j].Set(piece);
 
                     }
                     else if (!isOdd && j % 2 == 0)
                     {
-                        boardTile[i, j].value = "x";
+                        Piece piece = new Piece
+                        {
+                            isActive = true,
+                            player = Playertype.X,
+                            pieceType = PieceType.Pawn
+                        };
+                        boardTile[i, j].Set(piece);
                     }
                 }
             }
@@ -89,12 +103,24 @@ namespace Games
                 {
                     if (isOdd && j % 2 != 0)
                     {
-                        boardTile[i, j].value = "o";
+                        Piece piece = new Piece
+                        {
+                            isActive = true,
+                            player = Playertype.O,
+                            pieceType = PieceType.Pawn
+                        };
+                        boardTile[i, j].Set(piece);
 
                     }
                     else if (!isOdd && j % 2 == 0)
                     {
-                        boardTile[i, j].value = "o";
+                        Piece piece = new Piece
+                        {
+                            isActive = true,
+                            player = Playertype.O,
+                            pieceType = PieceType.Pawn
+                        };
+                        boardTile[i, j].Set(piece);
                     }
                 }
  
@@ -103,85 +129,332 @@ namespace Games
 
         }
 
+        public void SetCurrentPiece(Index piece)
+        {
+            currentPieceIndex = piece;
+        }
+
         private bool PlayerTurnLoop()
         {
             // Show user the board
             OnDrawBoard?.Invoke(boardTile);
-            OnSetStartPlayer?.Invoke(true);
-            // ask user if he wants to play again
+            // Toss a Coin to see who starts
+            // set to false to use finit state for ditermistic results for debuging
+            // or set to true to use random
+            OnSetStartPlayer?.Invoke(false);
+
             bool isEndofGame = false;
             while (!isEndofGame)
             {
+                // Show user the board
                 OnDrawBoard?.Invoke(boardTile);
+                // Get Player Piece Position
                 OnPlayerSelectPiece?.Invoke(boardTile);
-                OnPlayerSelectTile?.Invoke(boardTile);
-                playMove(xPawn, yPawn, xTile, yTile, isP1Turn);
-                isEndofGame = isWinGame();
-                //next players turn
-                isP1Turn = !isP1Turn;
+                // Move Player Piece if Valid Movement
+                OnPlayerMovePiece?.Invoke(boardTile);
+
+                // Check if Game Over
+                //isEndofGame = isWinGame();
+
+                ////next players turn
+                //if (currentPlayer == Playertype.X)
+                //    currentPlayer = Playertype.O;
+                //else
+                //    currentPlayer = Playertype.X;
             }
 
             return isEndofGame;
 
         }
 
-        private void playMove(int xPawn, int yPawn, int xTile, int yTile, bool isP1Turn)
+        public void PlayMove(Index direction)
         {
-            if((boardTile[xTile, yTile].value == " ")
-                && (xTile == xPawn + 1 || xTile == xPawn - 1) && (yTile == yPawn + 1 || yTile == yPawn - 1))
+            Playertype opponentPlayer = Playertype.X;
+            if (currentPlayer == Playertype.X)
+                opponentPlayer = Playertype.O;
+            if (boardTile[currentPieceIndex.xPos + direction.xPos, currentPieceIndex.yPos + direction.yPos].isEmpty)
             {
-                boardTile[xTile, yTile].value = boardTile[xPawn, yPawn].value;
-                boardTile[xPawn, yPawn].value = " ";
+                Index upperLeft = new Index
+                {
+                    xPos = currentPieceIndex.xPos + direction.xPos,
+                    yPos = currentPieceIndex.yPos + direction.yPos,
+                };
+                boardTile[upperLeft.xPos, upperLeft.yPos].Set(boardTile[currentPieceIndex.xPos, currentPieceIndex.yPos].piece);
+                boardTile[currentPieceIndex.xPos, currentPieceIndex.yPos].Reset();
+            }
+            else
+            {
+                Index tempMove = new Index
+                {
+                    xPos = currentPieceIndex.xPos,
+                    yPos = currentPieceIndex.yPos,
+                };
+                do
+                {
+                    Index newMove = new Index
+                    {
+                        xPos = tempMove.xPos + direction.xPos,
+                        yPos = tempMove.yPos + direction.yPos,
+                    };
+                    // move piece and delete opponent tile till you reach an empty tile
+                    boardTile[newMove.xPos, newMove.yPos].Set(boardTile[tempMove.xPos, tempMove.yPos].piece);
+                    boardTile[tempMove.xPos, tempMove.yPos].Reset();
+                    tempMove = newMove;
+                }
+                while (boardTile[tempMove.xPos + direction.xPos, tempMove.yPos + direction.yPos].piece.player == opponentPlayer);
+
+                Index emptyTile = new Index
+                {
+                    xPos = tempMove.xPos + direction.xPos,
+                    yPos = tempMove.yPos + direction.yPos,
+                };
+                // move piece and delete opponent tile till you reach an empty tile
+                boardTile[emptyTile.xPos, emptyTile.yPos].Set(boardTile[tempMove.xPos, tempMove.yPos].piece);
+                boardTile[tempMove.xPos, tempMove.yPos].Reset();
             }
         }
 
         private bool isWinGame()
         {
-            return false;
-        }
-
-        public bool isValidMove(int xPawn, int yPawn, int xTile, int yTile, bool isP1Turn)
-        {
-            // check if is diagonal tile
-            if ((boardTile[xTile, yTile].value == " ")
-                && (xTile == xPawn + 1 || xTile == xPawn - 1) && (yTile == yPawn + 1 || yTile == yPawn - 1))
+            bool isWon = false;
+            //TODO check win state logic
+            if (isWon)
             {
+                Playertype winner = new Playertype();
+                OnGameOver?.Invoke(winner);
                 return true;
             }
             else
+            {
                 return false;
+            }
+        }
+
+        public List<Index> getValidMove(Index piece)
+        {
+            switch (boardTile[piece.xPos, piece.yPos].piece.pieceType)
+            {
+                case PieceType.Pawn:
+                    return isPawnMove(piece);
+                case PieceType.Crown:
+                    return isCrownMove(piece);
+                default:
+                    return null;
+            }
 
         }
 
-        public bool isValidPawn(int xPawn, int yPawn, bool isP1Turn)
+        private List<Index> isPawnMove(Index piece)
         {
-            // check if is a valid place on the board
-            if (xPawn >= 0 && xPawn <= 7 && yPawn >= 0 && yPawn <= 7)
+            List<Index> legalMoves = null;
+            Playertype opponentPlayer = Playertype.X;
+            int rowDirection = 1;
+            if (boardTile[piece.xPos, piece.yPos].piece.player == Playertype.X)
             {
-                // check if is a valid players Piece
-                if (isP1Turn)
+                opponentPlayer = Playertype.O;
+                rowDirection = -1;
+            }
+            // check if is diagonal tile based on player
+            Index direction = new Index
+            {
+                xPos = rowDirection,
+                yPos = -1,
+            };
+            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
+                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
+
+            direction = new Index
+            {
+                xPos = rowDirection,
+                yPos = 1,
+            };
+            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
+                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
+
+            return legalMoves;
+
+        }
+
+        private List<Index> isCrownMove(Index piece)
+        {
+            List<Index> legalMoves = null;
+            Playertype opponentPlayer = Playertype.X;
+            if (boardTile[piece.xPos, piece.yPos].piece.player == Playertype.X)
+            {
+                opponentPlayer = Playertype.O;
+            }
+
+            // check if is diagonal tile based on player
+            Index direction = new Index
+            {
+                xPos = 1,
+                yPos = -1,
+            };
+            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
+                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
+
+            direction = new Index
+            {
+                xPos = 1,
+                yPos = 1,
+            };
+            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
+                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
+
+            direction = new Index
+            {
+                xPos = -1,
+                yPos = 1,
+            };
+            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
+                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
+
+            direction = new Index
+            {
+                xPos = -1,
+                yPos = -1,
+            };
+            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
+                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
+
+            return legalMoves;
+
+        }
+
+        private Index isDiagnolMove(Index piece,Index direction, Playertype opponentPlayer)
+        {
+            Index moveTile = new Index
+            {
+                xPos = piece.xPos + direction.xPos,
+                yPos = piece.yPos + direction.yPos,
+            };
+            if (isValidTile(moveTile))
+            {
+                if (boardTile[moveTile.xPos, moveTile.yPos].isEmpty)
                 {
-                    if (boardTile[xPawn, yPawn].value == "x")
-                        return true;
-                    else
-                        return false;
+                    Console.WriteLine(moveTile.xPos + "\n");
+                    Console.WriteLine(moveTile.yPos + "\n");
+                    return moveTile;
                 }
                 else
                 {
-
-                    if (boardTile[xPawn, yPawn].value == "o")
-                        return true;
+                    Index tempMove = new Index
+                    {
+                        xPos = piece.xPos + direction.xPos,
+                        yPos = piece.yPos + direction.yPos,
+                    };
+                    while (boardTile[tempMove.xPos, tempMove.yPos].piece.player == opponentPlayer)
+                    {
+                        Index newMove = new Index
+                        {
+                            xPos = tempMove.xPos + direction.xPos,
+                            yPos = tempMove.yPos + direction.yPos,
+                        };
+                        if (!isValidTile(moveTile))
+                            return null;
+                        tempMove = newMove;
+                    }
+                    if (boardTile[tempMove.xPos, tempMove.yPos].isEmpty)
+                    {
+                        Index upperLeft = new Index
+                        {
+                            xPos = piece.xPos + direction.xPos,
+                            yPos = piece.yPos + direction.yPos,
+                        };
+                        return upperLeft;
+                    }
                     else
-                        return false;
+                        return null;
                 }
+            }
+            else
+                return null;
+
+            
+        }
+
+        private bool isValidTile(Index piece)
+        {
+            if (((piece.xPos) >= 0 && (piece.xPos) <= 7)
+                && ((piece.yPos) >= 0 && (piece.yPos) <= 7))
+                return true;
+            else
+                return false;
+        }
+
+        // check if valid piece
+        public bool isValidPiece(Index piece)
+        {
+            // check if is a valid place on the board
+            if (piece.xPos >= 0 && piece.xPos <= 7 && piece.yPos >= 0 && piece.yPos <= 7)
+            {
+                // check if is a valid players Piece
+                if (boardTile[piece.xPos, piece.yPos].piece.player == currentPlayer)
+                    return true;
+                else
+                    return false;
             }
             else return false;
         }
 
-        public class Tile
+
+        /// <summary>
+        /// Board DataTypes
+        /// </summary>
+
+        // Type of Board Pieces in Checkers
+        public enum PieceType
         {
-            public string value;
+            Empty,
+            Pawn,
+            Crown
         }
 
+        // Type of Board Pieces in Checkers
+        public enum Playertype
+        {
+            Empty,
+            X,
+            O
+        }
+
+        public class Tile
+        {
+            public bool isEmpty = true;
+            public Piece piece;
+
+            public void Reset()
+            {
+                isEmpty = false;
+                piece.EmptyPiece();
+            }
+
+            public void Set(Piece updatePiece)
+            {
+                isEmpty = true;
+                piece = updatePiece;
+            }
+        }
+
+        // Piece class abstracted for account for 1D,2D,3D,NthD space 
+        public class Piece
+        {
+            public bool isActive;
+            public Playertype player;
+            public PieceType pieceType;
+
+            public void EmptyPiece()
+            {
+                isActive = false;
+                player = Playertype.Empty;
+                pieceType = PieceType.Empty;
+            }
+
+        }
+
+        public class Index
+        {
+            public int xPos, yPos;
+        }
     }
 }

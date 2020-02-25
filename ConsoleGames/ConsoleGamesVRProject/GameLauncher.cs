@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading; 
 
 namespace Games
@@ -16,7 +17,7 @@ namespace Games
             Setup();
             Clear();
             TellUser(" 1.Checkers \n 4.Exit\nPick a Game ? ");
-            string answer = "";
+            string answer;
             answer = AskUser();
             gameId = Convert.ToInt32(answer);
             switch (gameId)
@@ -38,15 +39,15 @@ namespace Games
             currentGame.OnDrawBoard += DrawBoard;
             currentGame.OnSetStartPlayer += TossCoin;
             currentGame.OnPlayerSelectPiece += PlayerSelectPiece;
-            currentGame.OnPlayerSelectTile += PlayerSelectTile;
+            currentGame.OnPlayerMovePiece += PlayerMovement;
+            currentGame.OnGameOver += GameOver;
         }
 
         // Piece Selection UI
         private void PlayerSelectPiece(Checkers.Tile[,] boardTile)
         {
-            int xPawn = -1;
-            int yPawn = -1;
-            while (!currentGame.isValidPawn(xPawn, yPawn, currentGame.isP1Turn))
+            Checkers.Index piece = new Checkers.Index();
+            do
             {
                 DrawBoard(boardTile);
                 TellUser("Please Choose a Pieces to move : (1-8,a-h)");
@@ -54,48 +55,51 @@ namespace Games
                 string[] position = answer.Split(",");
                 if (position.Length != 2)
                 {
-                    TellUser("Please enter a valid input.");
+                    Clear();
+                    TellUser("Please enter a valid Pieces.");
+                    Pause(pauseTime / 3);
                 }
                 else
                 {
-                    xPawn = Convert.ToInt32(position[0]) - 1;//Get int value and normalise to array index 0-7
-                    yPawn = ((int)Convert.ToChar(position[1]) - 97);//Get ASCII value 97-104 (a-h)and normalise to arry index 0-7
-
+                    piece.xPos = Convert.ToInt32(position[0]) - 1;//Get int value and normalise to array index 0-7
+                    piece.yPos = ((int)Convert.ToChar(position[1]) - 97);//Get ASCII value 97-104 (a-h)and normalise to arry index 0-7
+                    if (!currentGame.isValidPiece(piece))
+                    {
+                        Clear();
+                        TellUser("Please enter a valid Pieces.");
+                        Pause(pauseTime / 3);
+                    }
                 }
             }
-            TellUser("xPawn : " + xPawn);
-            TellUser("yPawn : " + yPawn);
-            currentGame.xPawn = xPawn;
-            currentGame.yPawn = yPawn;
+            while (!currentGame.isValidPiece(piece));
+
+            TellUser("xPawn : " + piece.xPos);
+            TellUser("yPawn : " + piece.yPos);
+            currentGame.SetCurrentPiece(piece); 
         }
 
         // Tile Selection UI
-        private void PlayerSelectTile(Checkers.Tile[,] boardTile)
+        private void PlayerMovement(Checkers.Tile[,] moveTiles)
         {
-            int xTile = -1;
-            int yTile = -1;
-            //check condition when updated with user values.-
-            do
-            {
-                DrawBoard(boardTile);
-                TellUser("Please Choose a diagnol tile to move to: (1-8,a-h)");
-                string answer = AskUser();
-                string[] movePawn = answer.Split(",");
-                if (movePawn.Length != 2)
-                {
-                    TellUser("Please enter a valid input.");
-                }
-                else
-                {
-                    xTile = Convert.ToInt32(movePawn[0]) - 1;//Get int value and normalise to array index 0-7
-                    yTile = ((int)Convert.ToChar(movePawn[1]) - 97);//Get ASCII value 97-104 (a-h)and normalise to arry index 0-7
-
-                }
-            }
-            while (!currentGame.isValidMove(currentGame.xPawn, currentGame.yPawn, xTile, yTile, currentGame.isP1Turn));
-
-            currentGame.xTile = xTile;
-            currentGame.yTile = yTile;
+            Clear();
+            List<Checkers.Index> moves = currentGame.getValidMove(currentGame.currentPieceIndex);
+            //if (moves != null)
+            //{
+            //    TellUser("Please Choose a move from the list: ");
+            //    for (int i = 0; i < moves.Count; i++)
+            //    {
+            //        TellUser((i+1) + " : " + moves[i]);
+            //    }
+            //    string answer = AskUser();
+            //    int moveIndex = Convert.ToInt32(answer) - 1;
+            //    currentGame.PlayMove(moves[moveIndex]);
+            //}
+            //else
+            //{
+            //    TellUser("Invalid Moves...");
+            //}
+            Pause(pauseTime / 3);
+            
         }
 
         // Toss a Coin UI
@@ -112,19 +116,20 @@ namespace Games
                     string progressBar = "";
                     for (int i = 0; i < tossTick; i++)
                     {
-                        progressBar += ".";
+                        progressBar += currentGame.currentPlayer;
                     }
                     TellUser(progressBar);
-                    currentGame.isP1Turn = NoiseGenerator.RollCoin();
-                    Pause(1000);
-                    if (currentGame.isP1Turn) TellUser("Is it Player 1 ?");
-                    else TellUser("Is it Player 2 ?");
+                    if(NoiseGenerator.RollCoin())
+                        currentGame.currentPlayer = Checkers.Playertype.X;
+                    else
+                        currentGame.currentPlayer = Checkers.Playertype.O;
+
                     Pause(1000);
                 }
             }
             else
             {
-                currentGame.isP1Turn = true;
+                currentGame.currentPlayer = Checkers.Playertype.X;
             }
         }
 
@@ -142,19 +147,39 @@ namespace Games
                 // rows
                 for (int j = 0; j < 8; j++)
                 {
-                    tile += "[" + boardTile[i, j].value + "]";
+                    switch (boardTile[i, j].piece.pieceType)
+                    {
+                        case Checkers.PieceType.Pawn:
+                            if (boardTile[i, j].piece.player == Checkers.Playertype.X) tile += "[x]";
+                            else tile += "[o]";
+                            break;
+                        case Checkers.PieceType.Crown:
+                            if (boardTile[i, j].piece.player == Checkers.Playertype.X) tile += "[X]";
+                            else tile += "[O]";
+                            break;
+                        case Checkers.PieceType.Empty:
+                        default:
+                            tile += "[ ]";
+                            break;
+                    }
                 }
 
                 TellUser(tile);
             }
 
-            if (currentGame.isP1Turn) TellUser("Player x Turn :");
+            if (currentGame.currentPlayer == Checkers.Playertype.X) TellUser("Player x Turn :");
             else TellUser("Player o Turn :");
             Pause(pauseTime / 6);
         }
 
-        private bool AskToPlay()
+        // GameOver UI
+        private void GameOver(Checkers.Playertype winner)
         {
+            // state the winner
+            if(winner != Checkers.Playertype.Empty) TellUser(winner +"Won");
+            else TellUser(" Its a Draw...");
+            Pause(pauseTime);
+
             //ask user if he want to play again
             bool isAskUser = true;
             while (isAskUser)
@@ -164,7 +189,7 @@ namespace Games
                 answer = AskUser();
                 if (answer == "y")
                 {
-                    return isAskUser;
+                    Play();
                 }
                 else if (answer == "n")
                 {
@@ -178,7 +203,6 @@ namespace Games
                 }
             }
 
-            return isAskUser;
 
         }
 
