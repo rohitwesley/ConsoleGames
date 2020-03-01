@@ -8,7 +8,7 @@ namespace ConsoleGamesVRProject
         static void Main(string[] args)
         {
             GameLauncher gameLauncher = new GameLauncher();
-            gameLauncher.Play();
+            gameLauncher.PlayLoop();
 
         }
     }

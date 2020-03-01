@@ -16,11 +16,6 @@ namespace Games
     class Composer : GameLogic
     {
 
-        public Composer(int gameId) : base(gameId)
-        {
-
-        }
-
         public static void PlayNotes(List<songNotes> songNotes)
         {
             foreach (songNotes songNote in songNotes)

@@ -37,12 +37,6 @@ namespace Games
             High = 40
         }
 
-        //Initialise Game Type ID
-        public Blackjack(int gameId) : base(gameId)
-        {
-
-        }
-
         /// <summary>
         /// Calls <see cref="AnotherMethod(int, float)"/> or something. I dunno.
         /// </summary>

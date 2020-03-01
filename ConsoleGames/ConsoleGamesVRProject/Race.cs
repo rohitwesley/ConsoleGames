@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Games
 {
@@ -25,12 +22,6 @@ namespace Games
         private Tile downValley;
         private Tile upValley;
         private List<Tile> raceTrack;
-
-        //Initialise Game Type ID
-        public Race(int gameId) : base(gameId)
-        {
-
-        }
 
         public override void Play()
         {

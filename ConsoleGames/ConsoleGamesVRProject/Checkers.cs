@@ -9,39 +9,17 @@ namespace Games
     /// <summary>
     /// Game Logic to play Checkers
     /// </summary>
-    class Checkers : GameLogic
+    class Checkers
     {
-        public event Action<Tile[,]> OnDrawBoard;
-        public event Action<bool> OnSetStartPlayer;
-        public event Action<Tile[,]> OnPlayerSelectPiece;
-        public event Action<Tile[,]> OnPlayerMovePiece;
-        public event Action<Playertype> OnGameOver;
 
-        private Tile[,] boardTile;
+        public Tile[,] boardTile;
 
         // active move
-        public List<Index> currentPieceMovesIndex;
+        public Index currentMoveIndex;
         public Index currentPieceIndex;
         public Playertype currentPlayer;
 
-        // Initialise Game Type ID
-        public Checkers(int gameId) : base(gameId)
-        {
-
-        }
-
-        public override void Play()
-        {
-            Setup();
-            PlayerTurnLoop();
-        }
-
-        protected override void Setup()
-        {
-            ResetBoardPieces();
-        }
-
-        private void ResetBoardPieces()
+        public void ResetBoardPieces()
         {
             boardTile = new Tile[8, 8];
 
@@ -129,43 +107,49 @@ namespace Games
 
         }
 
+        public void SetCurrentPlayer(Playertype player)
+        {
+            currentPlayer = player;
+            currentMoveIndex = null;
+            currentPieceIndex = null;
+        }
+
         public void SetCurrentPiece(Index piece)
         {
             currentPieceIndex = piece;
         }
 
-        private bool PlayerTurnLoop()
+        public void SetCurrentMove(Index move)
         {
-            // Show user the board
-            OnDrawBoard?.Invoke(boardTile);
-            // Toss a Coin to see who starts
-            // set to false to use finit state for ditermistic results for debuging
-            // or set to true to use random
-            OnSetStartPlayer?.Invoke(false);
-
-            bool isEndofGame = false;
-            while (!isEndofGame)
-            {
-                // Show user the board
-                OnDrawBoard?.Invoke(boardTile);
-                // Get Player Piece Position
-                OnPlayerSelectPiece?.Invoke(boardTile);
-                // Move Player Piece if Valid Movement
-                OnPlayerMovePiece?.Invoke(boardTile);
-
-                // Check if Game Over
-                //isEndofGame = isWinGame();
-
-                ////next players turn
-                //if (currentPlayer == Playertype.X)
-                //    currentPlayer = Playertype.O;
-                //else
-                //    currentPlayer = Playertype.X;
-            }
-
-            return isEndofGame;
-
+            currentMoveIndex = move;
         }
+
+        public bool TryMovePiece()
+        {
+            return false;
+        }
+
+        public bool IsGameOver()
+        {
+            bool isWon = false;
+            //TODO check win state logic
+            if (isWon)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public Playertype GetWinner()
+        {
+            //TODO logic for setting winner
+            return currentPlayer;
+        }
+
+
 
         public void PlayMove(Index direction)
         {
@@ -214,22 +198,6 @@ namespace Games
             }
         }
 
-        private bool isWinGame()
-        {
-            bool isWon = false;
-            //TODO check win state logic
-            if (isWon)
-            {
-                Playertype winner = new Playertype();
-                OnGameOver?.Invoke(winner);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
         public List<Index> getValidMove(Index piece)
         {
             switch (boardTile[piece.xPos, piece.yPos].piece.pieceType)
@@ -246,14 +214,15 @@ namespace Games
 
         private List<Index> isPawnMove(Index piece)
         {
-            List<Index> legalMoves = null;
+            List<Index> legalMoves = new List<Index>();
             Playertype opponentPlayer = Playertype.X;
             int rowDirection = 1;
-            if (boardTile[piece.xPos, piece.yPos].piece.player == Playertype.X)
+            if (currentPlayer == Playertype.X)
             {
                 opponentPlayer = Playertype.O;
                 rowDirection = -1;
             }
+
             // check if is diagonal tile based on player
             Index direction = new Index
             {
@@ -328,12 +297,10 @@ namespace Games
                 xPos = piece.xPos + direction.xPos,
                 yPos = piece.yPos + direction.yPos,
             };
-            if (isValidTile(moveTile))
+            if (isValidMove(moveTile))
             {
                 if (boardTile[moveTile.xPos, moveTile.yPos].isEmpty)
                 {
-                    Console.WriteLine(moveTile.xPos + "\n");
-                    Console.WriteLine(moveTile.yPos + "\n");
                     return moveTile;
                 }
                 else
@@ -350,7 +317,7 @@ namespace Games
                             xPos = tempMove.xPos + direction.xPos,
                             yPos = tempMove.yPos + direction.yPos,
                         };
-                        if (!isValidTile(moveTile))
+                        if (!isValidMove(moveTile))
                             return null;
                         tempMove = newMove;
                     }
@@ -373,7 +340,7 @@ namespace Games
             
         }
 
-        private bool isValidTile(Index piece)
+        private bool isValidMove(Index piece)
         {
             if (((piece.xPos) >= 0 && (piece.xPos) <= 7)
                 && ((piece.yPos) >= 0 && (piece.yPos) <= 7))
@@ -382,7 +349,7 @@ namespace Games
                 return false;
         }
 
-        // check if valid piece
+        // check if valid piece on the board and is the current players piece
         public bool isValidPiece(Index piece)
         {
             // check if is a valid place on the board
@@ -396,7 +363,6 @@ namespace Games
             }
             else return false;
         }
-
 
         /// <summary>
         /// Board DataTypes
@@ -456,5 +422,6 @@ namespace Games
         {
             public int xPos, yPos;
         }
+
     }
 }

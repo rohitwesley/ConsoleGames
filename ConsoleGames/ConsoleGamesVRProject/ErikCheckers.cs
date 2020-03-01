@@ -20,7 +20,7 @@ namespace ConsoleGamesVRProject
         // In this case, we do *not* create a controller class!
         // Instead, we treat the Main() function as the controller.
         // This could be made into its own class down the line.
-        private static void Main()
+        private static void GameLoop()
         {
             // Controller manages the lifecycle of the model and view.
             Checkers checkers = new Checkers();
@@ -63,7 +63,7 @@ namespace ConsoleGamesVRProject
     class Checkers
     {
         public bool IsWhiteTurn { get; private set; }
-
+         
         // Store the game state in a list of pieces.
         // We could also store it as a 2D array of tiles.
         // public List<Checker> pieces;
@@ -73,11 +73,13 @@ namespace ConsoleGamesVRProject
             // Check if it's the moving piece's turn.
             // Check if it is a valid move.
             // Update the game state if it is (board state and player's turn), otherwise return false.
+            return true;
         }
 
         public bool IsGameOver()
         {
             // Check game state.
+            return true;
         }
     }
 
@@ -94,5 +96,6 @@ namespace ConsoleGamesVRProject
         {
             // Access checker's board state, display the board on screen.
         }
+
     }
 }
