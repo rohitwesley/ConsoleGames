@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 
 namespace Games
 {
-    // ERIK: Stuff like this could be saved on branches.
     /// <summary>
-    /// Noise Generator funtion
+    /// A place for
+    /// TODO 1d,2d,3d Noise Generator funtions
+    /// TODO Role a Dice
+    /// Toss a Coin.
     /// </summary>
-    class NoiseGenerator
+    class PatternGenerator
     {
 
         static protected Random rnd = new Random();
@@ -48,4 +50,5 @@ namespace Games
         }
 
     }
+
 }

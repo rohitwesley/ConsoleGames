@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading; 
+using System.Threading;
 
 namespace Games
 {
@@ -25,34 +25,41 @@ namespace Games
                 view.ShowBoardState();
 
                 // Get player inputs;
-                SelectPlayerPiece();
-                //SelectPlayerPieceMovement();
+                do
+                {
+                    SelectPlayerPiece();
+                }
+                while (!SelectPlayerPieceMovement());
 
                 // TODO Debugging each stage of game loop after refactoring.
-                //// Get input, try to move the piece.
-                //if (checkersModel.TryMovePiece())
-                //{
-                //    // Piece was successfully moved. 
-                //    view.DrawBoard();
+                // Get input, try to move the piece.
+                if (checkersModel.TryMovePiece())
+                {
+                    // Piece was successfully moved. 
+                    view.Clear();
+                    view.DrawBoard();
+                    view.ShowBoardState();
+                    view.Pause(view.pauseTime / 3);
 
-                //    // Check if Game Over
-                //    if (checkersModel.IsGameOver())
-                //    {
-                //        // Print something, exit program, whatever.
-                //        isEndofGame = true;
-                //        GameOver();
-                //    }
-                //}
-                //else
-                //{
-                //    // Print an error, allow the loop to repeat.
-                //    view.Clear();
-                //    view.TellUser("Please enter a valid Move.");
-                //    view.Pause(view.pauseTime / 3);
-                //}
+                    // Check if Game Over
+                    //if (checkersModel.IsGameOver())
+                    //{
+                    //    // Print something, exit program, whatever.
+                    //    isEndofGame = true;
+                    //    GameOver();
+                    //}
+
+                    NextPlayer();
+                }
+                else
+                {
+                    // Print an error, allow the loop to repeat.
+                    view.Clear();
+                    view.TellUser("Please enter a valid Move.");
+                    view.Pause(view.pauseTime / 3);
+                }
 
 
-                NextPlayer();
                 //isEndofGame = true;
 
             }
@@ -110,36 +117,39 @@ namespace Games
         }
 
         // Tile Selection State
-        private void SelectPlayerPieceMovement()
+        private bool SelectPlayerPieceMovement()
         {
             view.Clear();
             view.DrawBoard();
             view.ShowBoardState();
+            bool hasMoves;
             List<Checkers.Index> moves = checkersModel.getValidMove(checkersModel.currentPieceIndex);
-            if (moves != null)
+            if (moves.Count > 0)
             {
                 view.TellUser("Please Choose a move from the list: ");
                 for (int i = 0; i < moves.Count; i++)
                 {
-                    view.TellUser((i + 1) + " : " + (moves[i].xPos+1) + " , " + (moves[i].yPos+1));
+                    view.TellUser((i + 1) + " : " + (moves[i].xPos + 1) + " , " + (moves[i].yPos + 1));
                 }
                 string answer = view.AskUser();
                 int moveIndex = Convert.ToInt32(answer) - 1;
                 checkersModel.SetCurrentMove(moves[moveIndex]);
+                hasMoves = true;
             }
             else
             {
-                view.TellUser("Invalid Moves...");
+                view.TellUser("No valid Moves...");
+                hasMoves = false;
             }
             view.Pause(view.pauseTime / 3);
-            
+            return hasMoves;
         }
 
         // Toss a Coin State
         private void TossCoin(bool isRand)
         {
             // Show toss coin animation
-            if(isRand)
+            if (isRand)
             {
                 Random rnd = new Random();
                 int tossTime = rnd.Next(4, 10);
@@ -154,7 +164,7 @@ namespace Games
                     }
                     view.TellUser(progressBar);
                     Checkers.Playertype nextPlayer = new Checkers.Playertype();
-                    if (NoiseGenerator.RollCoin())
+                    if (PatternGenerator.RollCoin())
                         nextPlayer = Checkers.Playertype.X;
                     else
                         nextPlayer = Checkers.Playertype.O;
@@ -171,6 +181,7 @@ namespace Games
             }
         }
 
+        // Update model to next player
         private void NextPlayer()
         {
             Checkers.Playertype nextPlayer = new Checkers.Playertype();
@@ -186,7 +197,7 @@ namespace Games
         {
             Checkers.Playertype winner = checkersModel.GetWinner();
             // state the winner
-            if (winner != Checkers.Playertype.Empty) view.TellUser(winner +"Won");
+            if (winner != Checkers.Playertype.Empty) view.TellUser(winner + "Won");
             else view.TellUser(" Its a Draw...");
             view.Pause(view.pauseTime);
         }
@@ -245,12 +256,12 @@ namespace Games
         public void ShowBoardState()
         {
             TellUser($"It is {(checkersModel.currentPlayer == Checkers.Playertype.X ? "white's" : "black's")} turn.");
-            if(checkersModel.currentPieceIndex != null) TellUser("Selected Piece : "
-                + "[" + checkersModel.currentPieceIndex.xPos + "]"
-                + "[" + checkersModel.currentPieceIndex.yPos + "]");
+            if (checkersModel.currentPieceIndex != null) TellUser("Selected Piece : "
+                 + "[" + (checkersModel.currentPieceIndex.xPos + 1) + "]"
+                 + "[" + (checkersModel.currentPieceIndex.yPos + 1) + "]");
             if (checkersModel.currentMoveIndex != null) TellUser("Selected Move : "
-                + "[" + checkersModel.currentMoveIndex.xPos + "]"
-                + "[" + checkersModel.currentMoveIndex.yPos + "]");
+                + "[" + (checkersModel.currentMoveIndex.xPos + 1) + "]"
+                + "[" + (checkersModel.currentMoveIndex.yPos + 1) + "]");
         }
 
         // Abstract the out to user statment for different platforms
@@ -278,4 +289,5 @@ namespace Games
         }
 
     }
+
 }

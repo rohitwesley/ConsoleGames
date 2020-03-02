@@ -126,7 +126,69 @@ namespace Games
 
         public bool TryMovePiece()
         {
-            return false;
+            bool hasMoved = false;
+            List<Checkers.Index> moves = getValidMove(currentPieceIndex);
+            if (moves.Count > 0)
+            {
+                // check if move is possible
+                for (int i = 0; i < moves.Count; i++)
+                {
+                    if (moves[i].xPos == currentMoveIndex.xPos
+                        &&
+                        moves[i].yPos == currentMoveIndex.yPos)
+                    {
+                        hasMoved = true;
+                    }
+                }
+                // move piece
+                if (hasMoved)
+                {
+                    Piece piece = boardTile[currentPieceIndex.xPos, currentPieceIndex.yPos].piece;
+                    Piece pieceTile = new Piece
+                    {
+                        isActive = piece.isActive,
+                        player = piece.player,
+                        pieceType = piece.pieceType
+                    };
+                    piece = boardTile[currentMoveIndex.xPos, currentMoveIndex.yPos].piece;
+                    Piece moveTile = new Piece
+                    {
+                        isActive = piece.isActive,
+                        player = piece.player,
+                        pieceType = piece.pieceType
+                    };
+
+                    boardTile[currentPieceIndex.xPos, currentPieceIndex.yPos].Reset();
+                    if(boardTile[currentMoveIndex.xPos, currentMoveIndex.yPos].isEmpty)
+                    {
+                        boardTile[currentMoveIndex.xPos, currentMoveIndex.yPos].Set(pieceTile);
+                    }
+                    // if is opponent piece attack
+                    else if (moveTile.player != currentPlayer)
+                    {
+                        // TODO follow down the best path attacking max opponents pieces till you reach a empty tile
+                        boardTile[currentMoveIndex.xPos, currentMoveIndex.yPos].Set(pieceTile);
+
+                        Index direction = new Index
+                        {
+                            xPos = currentMoveIndex.xPos - currentPieceIndex.xPos,
+                            yPos = currentMoveIndex.yPos - currentPieceIndex.yPos
+                        };
+
+                        currentPieceIndex.xPos = currentMoveIndex.xPos;
+                        currentPieceIndex.yPos = currentMoveIndex.yPos;
+
+                        currentMoveIndex.xPos = currentPieceIndex.xPos + direction.xPos;
+                        currentMoveIndex.yPos = currentPieceIndex.yPos + direction.yPos;
+                        TryMovePiece();
+                    }
+                }
+            }
+            else
+            {
+                hasMoved = false;
+            }
+            return hasMoved;
         }
 
         public bool IsGameOver()
@@ -149,197 +211,214 @@ namespace Games
             return currentPlayer;
         }
 
-
-
-        public void PlayMove(Index direction)
-        {
-            Playertype opponentPlayer = Playertype.X;
-            if (currentPlayer == Playertype.X)
-                opponentPlayer = Playertype.O;
-            if (boardTile[currentPieceIndex.xPos + direction.xPos, currentPieceIndex.yPos + direction.yPos].isEmpty)
-            {
-                Index upperLeft = new Index
-                {
-                    xPos = currentPieceIndex.xPos + direction.xPos,
-                    yPos = currentPieceIndex.yPos + direction.yPos,
-                };
-                boardTile[upperLeft.xPos, upperLeft.yPos].Set(boardTile[currentPieceIndex.xPos, currentPieceIndex.yPos].piece);
-                boardTile[currentPieceIndex.xPos, currentPieceIndex.yPos].Reset();
-            }
-            else
-            {
-                Index tempMove = new Index
-                {
-                    xPos = currentPieceIndex.xPos,
-                    yPos = currentPieceIndex.yPos,
-                };
-                do
-                {
-                    Index newMove = new Index
-                    {
-                        xPos = tempMove.xPos + direction.xPos,
-                        yPos = tempMove.yPos + direction.yPos,
-                    };
-                    // move piece and delete opponent tile till you reach an empty tile
-                    boardTile[newMove.xPos, newMove.yPos].Set(boardTile[tempMove.xPos, tempMove.yPos].piece);
-                    boardTile[tempMove.xPos, tempMove.yPos].Reset();
-                    tempMove = newMove;
-                }
-                while (boardTile[tempMove.xPos + direction.xPos, tempMove.yPos + direction.yPos].piece.player == opponentPlayer);
-
-                Index emptyTile = new Index
-                {
-                    xPos = tempMove.xPos + direction.xPos,
-                    yPos = tempMove.yPos + direction.yPos,
-                };
-                // move piece and delete opponent tile till you reach an empty tile
-                boardTile[emptyTile.xPos, emptyTile.yPos].Set(boardTile[tempMove.xPos, tempMove.yPos].piece);
-                boardTile[tempMove.xPos, tempMove.yPos].Reset();
-            }
-        }
-
         public List<Index> getValidMove(Index piece)
         {
+            List<Index> legalMoves = new List<Index>();
             switch (boardTile[piece.xPos, piece.yPos].piece.pieceType)
             {
                 case PieceType.Pawn:
-                    return isPawnMove(piece);
+                    legalMoves = isPawnMove(piece);
+                    break;
                 case PieceType.Crown:
-                    return isCrownMove(piece);
+                    legalMoves = isCrownMove(piece);
+                    break;
                 default:
-                    return null;
+                    legalMoves = getValidEmptyTiles(getAdjucentTiles(piece));
+                    break;
             }
-
+            return legalMoves;
         }
 
+        // Get Adjucent Tiles without board bounds
+        private List<Index> getAdjucentTiles(Index piece)
+        {
+            List<Index> legalMoves = new List<Index>();
+
+            // check if is diagonal tile based on player
+            Index direction = new Index();
+
+            // Row Above Piece
+            direction.xPos = piece.xPos + 1;
+            direction.yPos = piece.yPos - 1;
+            legalMoves.Add(direction);
+
+            direction = new Index();
+            direction.xPos = piece.xPos + 1;
+            direction.yPos = piece.yPos;
+            legalMoves.Add(direction);
+
+            direction = new Index();
+            direction.xPos = piece.xPos + 1;
+            direction.yPos = piece.yPos + 1;
+            legalMoves.Add(direction);
+
+
+            // Same Row as Piece
+            direction = new Index();
+            direction.xPos = piece.xPos;
+            direction.yPos = piece.yPos - 1;
+            legalMoves.Add(direction);
+
+            // This is where the piece is. just put for illustratoin purpose.
+            //direction = new Index();
+            //direction.xPos = piece.xPos;
+            //direction.yPos = piece.yPos;
+            //legalMoves.Add(direction);
+
+            direction = new Index();
+            direction.xPos = piece.xPos;
+            direction.yPos = piece.yPos + 1;
+            legalMoves.Add(direction);
+
+
+            // Row Below Piece
+            direction = new Index();
+            direction.xPos = piece.xPos - 1;
+            direction.yPos = piece.yPos - 1;
+            legalMoves.Add(direction);
+
+            direction = new Index();
+            direction.xPos = piece.xPos - 1;
+            direction.yPos = piece.yPos;
+            legalMoves.Add(direction);
+
+            direction = new Index();
+            direction.xPos = piece.xPos - 1;
+            direction.yPos = piece.yPos + 1;
+            legalMoves.Add(direction);
+
+            return legalMoves;
+        }
+
+        // Get Diagnol Tiles without board bounds
+        private List<Index> getDiagnolTiles(Index piece)
+        {
+            List<Index> adjacentMoves = getAdjucentTiles(piece);
+
+            List<Index> legalMoves = new List<Index>();
+            //ignore other tiles and select only diagnols
+            legalMoves.Add(adjacentMoves[0]);
+            legalMoves.Add(adjacentMoves[2]);
+            legalMoves.Add(adjacentMoves[5]);
+            legalMoves.Add(adjacentMoves[7]);
+            return legalMoves;
+        }
+
+        // Get Empty Tiles within board bounds
+        private List<Index> getValidEmptyTiles(List<Index> moves)
+        {
+            List<Index> legalMoves = new List<Index>();
+            for (int i = 0; i < moves.Count; i++)
+            {
+                if (isValidEmptyTile(moves[i]))
+                    legalMoves.Add(moves[i]);
+            }
+            return legalMoves;
+        }
+
+        // Get Occupied Tiles within board bounds
+        private List<Index> getValidOccupiedTiles(List<Index> moves)
+        {
+            List<Index> legalMoves = new List<Index>();
+            for (int i = 0; i < moves.Count; i++)
+            {
+                if (isValidOccupiedTile(moves[i]))
+                    legalMoves.Add(moves[i]);
+            }
+            return legalMoves;
+        }
+
+
+        // is a checkers pawn piece that can only move diagnoly in one direction depending on whos piece
         private List<Index> isPawnMove(Index piece)
         {
             List<Index> legalMoves = new List<Index>();
-            Playertype opponentPlayer = Playertype.X;
-            int rowDirection = 1;
-            if (currentPlayer == Playertype.X)
+
+            List<Index> diagnolPlayerTiles = getDiagnolPlayerTiles(piece);
+
+            List<Index> diagnolEmptyTiles = getValidEmptyTiles(diagnolPlayerTiles);
+            for (int j = 0; j < diagnolEmptyTiles.Count; j++)
             {
-                opponentPlayer = Playertype.O;
-                rowDirection = -1;
+                legalMoves.Add(diagnolEmptyTiles[j]);
             }
+            List<Index> diagnolOccupiedTiles = getValidOccupiedTiles(diagnolPlayerTiles);
+            List<Index> diagnolAttackTiles = getValidOccupiedTiles(diagnolPlayerTiles);
 
-            // check if is diagonal tile based on player
-            Index direction = new Index
+
+            // TODO check logic to account for attack moves (recursive) currently check if ony 1st depth has empty tile
+            int i = 0;
+            bool isSearching = true;
+            while (isSearching)
             {
-                xPos = rowDirection,
-                yPos = -1,
-            };
-            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
-                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
-
-            direction = new Index
-            {
-                xPos = rowDirection,
-                yPos = 1,
-            };
-            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
-                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
-
-            return legalMoves;
-
-        }
-
-        private List<Index> isCrownMove(Index piece)
-        {
-            List<Index> legalMoves = null;
-            Playertype opponentPlayer = Playertype.X;
-            if (boardTile[piece.xPos, piece.yPos].piece.player == Playertype.X)
-            {
-                opponentPlayer = Playertype.O;
-            }
-
-            // check if is diagonal tile based on player
-            Index direction = new Index
-            {
-                xPos = 1,
-                yPos = -1,
-            };
-            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
-                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
-
-            direction = new Index
-            {
-                xPos = 1,
-                yPos = 1,
-            };
-            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
-                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
-
-            direction = new Index
-            {
-                xPos = -1,
-                yPos = 1,
-            };
-            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
-                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
-
-            direction = new Index
-            {
-                xPos = -1,
-                yPos = -1,
-            };
-            if (isDiagnolMove(piece, direction, opponentPlayer) != null)
-                legalMoves.Add(isDiagnolMove(piece, direction, opponentPlayer));
-
-            return legalMoves;
-
-        }
-
-        private Index isDiagnolMove(Index piece,Index direction, Playertype opponentPlayer)
-        {
-            Index moveTile = new Index
-            {
-                xPos = piece.xPos + direction.xPos,
-                yPos = piece.yPos + direction.yPos,
-            };
-            if (isValidMove(moveTile))
-            {
-                if (boardTile[moveTile.xPos, moveTile.yPos].isEmpty)
-                {
-                    return moveTile;
-                }
+                if (i >= diagnolOccupiedTiles.Count)
+                    isSearching = false;
                 else
                 {
-                    Index tempMove = new Index
+                    // if occupied tile has opponent piece add to search tree
+                    if (boardTile[diagnolOccupiedTiles[i].xPos, diagnolOccupiedTiles[i].yPos].piece.player != currentPlayer)
                     {
-                        xPos = piece.xPos + direction.xPos,
-                        yPos = piece.yPos + direction.yPos,
-                    };
-                    while (boardTile[tempMove.xPos, tempMove.yPos].piece.player == opponentPlayer)
-                    {
-                        Index newMove = new Index
-                        {
-                            xPos = tempMove.xPos + direction.xPos,
-                            yPos = tempMove.yPos + direction.yPos,
-                        };
-                        if (!isValidMove(moveTile))
-                            return null;
-                        tempMove = newMove;
+                        diagnolPlayerTiles = getDiagnolPlayerTiles(diagnolOccupiedTiles[i]);
+
                     }
-                    if (boardTile[tempMove.xPos, tempMove.yPos].isEmpty)
-                    {
-                        Index upperLeft = new Index
-                        {
-                            xPos = piece.xPos + direction.xPos,
-                            yPos = piece.yPos + direction.yPos,
-                        };
-                        return upperLeft;
-                    }
-                    else
-                        return null;
+
+                    diagnolEmptyTiles = getValidEmptyTiles(diagnolPlayerTiles);
+                    if(diagnolEmptyTiles.Count>0)
+                        legalMoves.Add(diagnolOccupiedTiles[i]);
+                    i++;
                 }
             }
-            else
-                return null;
 
-            
+
+            return legalMoves;
         }
 
+        private List<Index> getDiagnolPlayerTiles(Index piece)
+        {
+            List<Index> diagnolTiles = getDiagnolTiles(piece);
+
+            List<Index> diagnolPlayerTiles = new List<Index>();
+            if (currentPlayer == Playertype.X)
+            {
+                diagnolPlayerTiles.Add(diagnolTiles[0]);
+                diagnolPlayerTiles.Add(diagnolTiles[1]);
+            }
+            else
+            {
+                diagnolPlayerTiles.Add(diagnolTiles[2]);
+                diagnolPlayerTiles.Add(diagnolTiles[3]);
+            }
+            return diagnolPlayerTiles;
+        }
+
+        // is a checkers crown piece that can go in any direction diagnoly.
+        private List<Index> isCrownMove(Index piece)
+        {
+            List<Index> legalMoves = new List<Index>();
+            legalMoves = getDiagnolTiles(piece);
+            return getValidEmptyTiles(legalMoves);
+
+        }
+
+
+        // check is a empty tile within the bounds of the board
+        private bool isValidEmptyTile(Index direction)
+        {
+            if (isValidMove(direction) && boardTile[direction.xPos, direction.yPos].isEmpty)
+                return true;
+            else
+                return false;
+        }
+
+        // check is a occupied tile within the bounds of the board
+        private bool isValidOccupiedTile(Index direction)
+        {
+            if (isValidMove(direction) && !boardTile[direction.xPos, direction.yPos].isEmpty)
+                return true;
+            else
+                return false;
+        }
+
+        // check for board bounds
         private bool isValidMove(Index piece)
         {
             if (((piece.xPos) >= 0 && (piece.xPos) <= 7)
@@ -391,13 +470,13 @@ namespace Games
 
             public void Reset()
             {
-                isEmpty = false;
+                isEmpty = true;
                 piece.EmptyPiece();
             }
 
             public void Set(Piece updatePiece)
             {
-                isEmpty = true;
+                isEmpty = false;
                 piece = updatePiece;
             }
         }
